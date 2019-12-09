@@ -88,7 +88,8 @@ public class GoServer {
                 partner = games.get(myGame).partner(out);
 
                 out.println("PARTNER FOUND");
-                out.println("YOU PLAY WITH " + color);
+                out.println("COLOR_" + (color.equals("B") ? 1:2));
+                System.out.println("COLOR_" + (color.equals("B") ? 1:2));
                 while (true) {
                     String input = in.nextLine();
                     if (input.toLowerCase().startsWith("/quit")) {
@@ -131,7 +132,14 @@ public class GoServer {
                         }
 
                     }*/
-                    if(input.startsWith("SET") && games.get(myGame).isMyMove(color)) {
+                    if(input.startsWith("CHAT_")){
+                        String temp = input.substring(0, 5);
+                        temp = temp + (color.equals("B") ? "czarny: " : "biały: ");
+                        temp = temp + input.substring(input.indexOf('_')+1);
+                        partner.println(temp);
+                        out.println(temp);
+                    }
+                    else if(input.startsWith("SET") && games.get(myGame).isMyMove(color)) {
                         String temp = input;
                         input = input.substring(input.indexOf('_') + 1);
                         int i = Integer.parseInt(input.substring(0, input.indexOf('_')));

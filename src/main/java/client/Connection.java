@@ -40,12 +40,7 @@ public class Connection {
 
             while (in.hasNextLine()) {
                 var line = in.nextLine();
-                if (line.startsWith("SET") || line.startsWith("REMOVE")) {
-                    received(line.toString());
-                }
-                else {
-                    System.out.println(line.toString());
-                }
+                received(line.toString());
                 /*synchronized (this) {
                     if (!msgs.isEmpty()) {
                         for (String s : msgs) {
