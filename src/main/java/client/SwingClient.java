@@ -5,6 +5,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
 
 public class SwingClient implements ActionListener, ClientGUI {
     private JPanel board;
@@ -14,16 +15,22 @@ public class SwingClient implements ActionListener, ClientGUI {
     private JTextArea chat;
     private JTextField chatInput;
     private JPanel chatPlace;
+    private JButton accept;
     private JButton[][] btns;
     private int size = 0;
     private Board bd;
+    private int mode;
+
+    public SwingClient(){
+        super();
+    }
 
     public static void main(String[] args) {
         JFrame frame = new JFrame("GO");
         var panel = new SwingClient();
 
 
-        while(true) {
+        /*while(true) {
             String dim = JOptionPane.showInputDialog("Please input mark for test 1: ");
             try{
                 panel.size = Integer.parseInt(dim);
@@ -32,11 +39,46 @@ public class SwingClient implements ActionListener, ClientGUI {
             catch (Exception ex){
 
             }
+        }*/
+        Object[] options = {"9 x 9",
+                "13 x 13",
+                "19 x 19"};
+        int n = JOptionPane.showOptionDialog(null,
+                "Wybierz rozmiar planszy",
+                "GO",
+                JOptionPane.YES_NO_CANCEL_OPTION,
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                options,
+                options[2]);
+        if(n == -1)
+            System.exit(0);
+        options = new Object[]{"Gra z przeciwnikiem", "Gra z botem"};
+        panel.mode = JOptionPane.showOptionDialog(null,
+                "Wybierz tryb gry",
+                "GO",
+                JOptionPane.YES_NO_CANCEL_OPTION,
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                options,
+                options[1]);
+        if(panel.mode == -1)
+            System.exit(0);
+
+        System.out.println(n);
+        if(n == -1) {
+            System.exit(0);
+        } else if(n == 0) {
+            panel.size = 9;
+        } else if(n == 1){
+            panel.size = 13;
+        } else if(n == 2){
+            panel.size = 19;
         }
 
         new Thread(() -> {
             try {
-                Connection.init("127.0.0.1", panel, panel.size);
+                Connection.init("127.0.0.1", panel, panel.size, panel.mode);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -53,6 +95,11 @@ public class SwingClient implements ActionListener, ClientGUI {
 
 
     }
+
+    /*public SwingClient(int size, boolean bot){
+        this.size = size;
+        this.bot = bot;
+    }*/
 
     public void printH() {
         System.out.println("H1: " + btns[0][0].getY());
@@ -73,6 +120,16 @@ public class SwingClient implements ActionListener, ClientGUI {
 
         pass.setText("Zrezygnuj z ruchu");
         surrender.setText("Poddaj się");
+        accept.setVisible(false);
+        accept.setEnabled(false);
+        accept.setText("Zatwierdź wybrane");
+        accept.addActionListener(new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Connection.send("STATES" + bd.getStates());
+                System.out.println("STATES" + bd.getStates());
+            }
+        });
 
         chat = new JTextArea(10, 25);
         JScrollPane scrollPane = new JScrollPane(chat);
@@ -87,6 +144,24 @@ public class SwingClient implements ActionListener, ClientGUI {
             {
                 Connection.send("CHAT_" + ((JTextField)e.getSource()).getText());
                 ((JTextField)e.getSource()).setText("");
+            }
+        });
+
+        pass.addActionListener(new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if(bd.isEndgame()){
+                    Connection.send("RESTART");
+                    bd.repaint();
+                } else {
+                    Connection.send("PASS");
+                }
+            }
+        });
+        surrender.addActionListener(new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Connection.send("SURRENDER");
             }
         });
         for (int i = 0; i < n; i++) {
@@ -111,45 +186,88 @@ public class SwingClient implements ActionListener, ClientGUI {
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        JButton b = (JButton) e.getSource();
-        String msg = "SET_" + b.getName();
-        System.out.println("Sent: " + msg);
-        printH();
-        synchronized (this) {
-            Connection.send(msg);
+        if(!bd.isEndgame()) {
+            JButton b = (JButton) e.getSource();
+            String msg = "SET_" + b.getName();
+            System.out.println("Sent: " + msg);
+            printH();
+            synchronized (this) {
+                Connection.send(msg);
+            }
+        } else{
+            JButton b = (JButton) e.getSource();
+            String t = b.getName();
+            int i = Integer.parseInt(t.substring(0, t.indexOf('_')));
+            int l = Integer.parseInt(t.substring(t.indexOf('_')+1));
+            bd.clicked(i, l);
+            if(bd.allSet()){
+                accept.setEnabled(true);
+            }
         }
     }
 
     @Override
     public void action(String msg) {
-        if(msg.startsWith("SET")){
-            System.out.println("Received: " + msg);
-            System.out.println(msg.length());
-            msg  = msg.substring(msg.indexOf('_')+1);
-            System.out.println(msg);
-            int i = Integer.parseInt(msg.substring(0, msg.indexOf('_')));
-            System.out.println(i);
-            msg  = msg.substring(msg.indexOf('_')+1);
-            int l = Integer.parseInt(msg.substring(0, msg.indexOf('_')));
-            System.out.println(l);
-            msg  = msg.substring(msg.indexOf('_')+1);
-            bd.put(i, l, msg.startsWith("B") ? 1:2);
+        if (msg.startsWith("CHAT_"))
+            chat.append("\n" + msg.substring(msg.indexOf("_") + 1));
+        else if(msg.startsWith("TERRITORY")){
+            bd.setTerritory(msg);
         }
-        else if(msg.startsWith("REMOVE")){
-            msg = msg.substring(msg.indexOf('_')+1);
-            while(msg.length() > 0){
+        if(!bd.isEndgame()) {
+            if (msg.startsWith("SET")) {
+                System.out.println("Received: " + msg);
+                System.out.println(msg.length());
+                msg = msg.substring(msg.indexOf('_') + 1);
+                System.out.println(msg);
                 int i = Integer.parseInt(msg.substring(0, msg.indexOf('_')));
-                msg  = msg.substring(msg.indexOf('_')+1);
+                System.out.println(i);
+                msg = msg.substring(msg.indexOf('_') + 1);
                 int l = Integer.parseInt(msg.substring(0, msg.indexOf('_')));
-                msg  = msg.substring(msg.indexOf('_')+1);
-                bd.remove(i, l);
+                System.out.println(l);
+                msg = msg.substring(msg.indexOf('_') + 1);
+                bd.put(i, l, msg.startsWith("B") ? 1 : 2);
+            } else if (msg.startsWith("REMOVE")) {
+                msg = msg.substring(msg.indexOf('_') + 1);
+                while (msg.length() > 0) {
+                    int i = Integer.parseInt(msg.substring(0, msg.indexOf('_')));
+                    msg = msg.substring(msg.indexOf('_') + 1);
+                    int l = Integer.parseInt(msg.substring(0, msg.indexOf('_')));
+                    msg = msg.substring(msg.indexOf('_') + 1);
+                    bd.remove(i, l);
+                }
+            } else if (msg.startsWith("COLOR")) {
+                bd.setColor(msg.contains("1") ? 1 : 2);
+            } else if (msg.startsWith("CHAINS_")) {
+                bd.setEndgame(true);
+                pass.setText("Wznów grę");
+                accept.setVisible(true);
+                accept.setEnabled(false);
+                msg = msg.substring(msg.indexOf("_") + 1);
+                ArrayList<Board.Stone> stones;
+                while (msg.contains("C")) {
+                    stones = new ArrayList<>();
+                    int color = Integer.parseInt(msg.substring(1, msg.indexOf('_')));
+                    msg = msg.substring(msg.indexOf("_") + 1);
+                    do {
+                        int i = Integer.parseInt(msg.substring(0, msg.indexOf('_')));
+                        msg = msg.substring(msg.indexOf('_') + 1);
+                        int l = Integer.parseInt(msg.substring(0, msg.indexOf('_')));
+                        msg = msg.substring(msg.indexOf('_') + 1);
+                        stones.add(new Board.Stone(i, l, color));
+                    } while (!msg.startsWith("C") && msg.length() > 0);
+                    bd.addChain(stones);
+                }
+
+                bd.repaint();
             }
-        }
-        else if(msg.startsWith("COLOR")){
-            bd.setColor(msg.contains("1") ? 1:2);
-        }
-        else if(msg.startsWith("CHAT_")){
-            chat.append("\n" + msg.substring(msg.indexOf("_")+1));
+        } else{
+            if(msg.startsWith("RESTART")){
+                bd.setEndgame(false);
+                pass.setText("Zrezygnuj z ruchu");
+                accept.setVisible(false);
+                accept.setEnabled(false);
+            }
+
         }
 
     }
