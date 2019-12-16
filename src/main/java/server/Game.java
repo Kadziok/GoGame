@@ -14,6 +14,7 @@ public class Game {
     private boolean passed = false;
     private boolean end = false;
     private boolean botMode = false;
+    private int[] blocked = null;
     private String[] states = {null, null};
 
     public Game(PrintWriter out, int size){
@@ -48,9 +49,10 @@ public class Game {
 
     public boolean moved(int x, int y){
         if(board[x][y] != 0) {
-            System.out.println("---NO MOVE SAVED---");
             return false;
         }
+        if(blocked != null && blocked[0] == x && blocked[1] == y)
+            return false;
         int temp = (move == "B") ? 1:2;
         board[x][y] = temp;;
         if(breaths(x, y) == 0) {
@@ -73,6 +75,7 @@ public class Game {
             board[x][y] = 2;
         }
         passed = false;
+        blocked = null;
         return true;
     }
 
@@ -275,6 +278,8 @@ public class Game {
     }
 
     public boolean statesEqual(){
+        if(states == null || states[0] == null || states[1] == null)
+            return false;
         if(states[0].equals(states[1]))
             return true;
         else
@@ -327,6 +332,16 @@ public class Game {
     }
     public int[][] getBoard(){
         return board;
+    }
+
+    public void blocked(String s){
+        if(s.length() == "REMOVE_0_0_".length()){
+            s = s.substring(s.indexOf("_") + 1);
+            int i = Integer.parseInt(s.substring(0, s.indexOf("_")));
+            s = s.substring(s.indexOf("_") + 1);
+            int l = Integer.parseInt(s.substring(0, s.indexOf("_")));
+            blocked = new int[] {i, l};
+        }
     }
 
 }

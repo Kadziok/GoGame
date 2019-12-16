@@ -3,7 +3,6 @@ package client;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.geom.Ellipse2D;
-import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -12,7 +11,7 @@ public class Board extends JPanel {
     private int size;
     private int x, y;
     private int color = 1;
-    private ArrayList<Stone> stones = new ArrayList<>();
+    public ArrayList<Stone> stones = new ArrayList<>();
     private ArrayList<Chain> chains = new ArrayList<>();
     private ArrayList<Stone> territory = new ArrayList<>();
     private boolean endgame = false;
@@ -62,36 +61,6 @@ public class Board extends JPanel {
             }
         }
 
-        /*if(!endgame) {
-            g2.setPaint(colors[color]);
-            g2.fill(new Ellipse2D.Float(y * j + p / 2, x * j + p / 2, p, p));
-        }*/
-        /*else {
-            synchronized (this){
-                boolean help = false;
-                for (Chain ch : chains){
-                    for (Stone s : ch.getStones()){
-                        if(s.getY() == y && s.getX() == x){
-                            help = true;
-                            break;
-                        }
-                    }
-                    if(help){
-                        for (Stone s : ch.getStones()){
-                            if(s.getY() == ch.getIdY() && s.getX() == ch.getIdX()) {
-                                g2.setPaint(colors[s.getColorNum()]);
-                            }
-                            else {
-                                g2.setPaint(colors[s.getColorNum() + 2]);
-                            }
-                            g2.setPaint(colors[ch.getState()]);
-                            g2.fill(new Ellipse2D.Float(s.getY() * j + p / 2, s.getX() * j + p / 2, p, p));
-                        }
-                        break;
-                    }
-                }
-            }
-        }*/
 
         if (!endgame) {
             g2.setPaint(colors[color]);
@@ -100,8 +69,6 @@ public class Board extends JPanel {
             g2.setPaint(new Color(232, 249, 22));
             g2.fill(new Ellipse2D.Float(y * j + p / 2 + p / 4, x * j + p / 2 + p / 4, p / 2, p / 2));
         }
-        /*g2.setPaint(colors[color]);
-        g2.fill(new Ellipse2D.Float(y * j + p / 2, x * j + p / 2, p, p));*/
 
     }
     public Board(int size){
@@ -114,7 +81,6 @@ public class Board extends JPanel {
     public void show(@org.jetbrains.annotations.NotNull String s){
         this.x = Integer.parseInt(s.substring(0, s.indexOf('_')));
         this.y = Integer.parseInt(s.substring(s.indexOf('_') + 1));
-        //System.out.println("X = " + x + "| Y = " + y);
         repaint();
     }
     public void put(int i, int l, int c){
@@ -137,7 +103,7 @@ public class Board extends JPanel {
             }
         }
     }
-    public void addChain(ArrayList<Stone> chain){
+    public synchronized void addChain(ArrayList<Stone> chain){
         chains.add(new Chain(chain));
     }
 

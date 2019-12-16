@@ -73,8 +73,9 @@ public class GoServer {
                         botMode = true;
                         games.put(maxId, new Game(out, size));
                         myGame = maxId;
-                        bot = new Bot(size);
+                        bot = new Bot(size, games.get(myGame));
                         color = "B";
+                        games.get(myGame).join(null);
                         maxId++;
                     }
                     else {
@@ -144,6 +145,7 @@ public class GoServer {
                                     if (msg.length() > "REMOVE_".length()) {
                                         String w = "CHAT_WYNIK: czarny: " + games.get(myGame).points[0]
                                                 + " | biały: " + games.get(myGame).points[1];
+                                        games.get(myGame).blocked(msg);
                                         partner.println(w);
                                         out.println(w);
                                         partner.println(msg);
@@ -169,6 +171,11 @@ public class GoServer {
                                     partner.println(territory);
                                 }
 
+                            } else if (input.startsWith("SURRENDER")){
+                                out.println("CHAT_"+(color.equals("B") ? "czarny: " : "biały: ") + " poddał grę.");
+                                partner.println("CHAT_"+(color.equals("B") ? "czarny: " : "biały: ") + " poddał grę.");
+                                out.println("END");
+                                partner.println("END");
                             }
                         } else {
                             if (input.startsWith("RESTART")) {
@@ -194,6 +201,8 @@ public class GoServer {
                                                 score = "Remis";
                                             out.println("CHAT_KONIEC GRY: " + score);
                                             partner.println("CHAT_KONIEC GRY: " + score);
+                                            out.println("END");
+                                            partner.println("END");
                                         } else
                                             System.out.println("---NULL SCORE ARRAY---");
 
@@ -241,8 +250,9 @@ public class GoServer {
                                                 + " | biały: " + games.get(myGame).points[1];
                                         out.println(w);
                                         out.println(msg);
+                                        games.get(myGame).blocked(msg);
                                     }
-                                    for(String m : bot.move(games.get(myGame)))
+                                    for(String m : bot.move())
                                         out.println(m);
 
                                 }
@@ -261,6 +271,10 @@ public class GoServer {
                                     out.println(territory);
                                 }
 
+                            } else if (input.startsWith("SURRENDER")){
+                                out.println("CHAT_Gracz poddał grę.");
+                                out.println("END");
+                                throw new Exception();
                             }
                         } else {
                             if (input.startsWith("RESTART")) {
@@ -296,7 +310,10 @@ public class GoServer {
                 }
 
             } catch (Exception e) {
-                out.println("CHAT_Przeciwnik opuścił grę. Utwórz nową grę, by zagrać z przeciwnikiem");
+                if(!botMode)
+                    partner.println("CHAT_Przeciwnik opuścił grę. Utwórz nową grę, by zagrać z przeciwnikiem");
+                else
+                    out.println("CHAT_KONIEC GRY");
                 games.remove(myGame);
             } finally {
                 try {

@@ -65,7 +65,6 @@ public class SwingClient implements ActionListener, ClientGUI {
         if(panel.mode == -1)
             System.exit(0);
 
-        System.out.println(n);
         if(n == -1) {
             System.exit(0);
         } else if(n == 0) {
@@ -212,6 +211,11 @@ public class SwingClient implements ActionListener, ClientGUI {
             chat.append("\n" + msg.substring(msg.indexOf("_") + 1));
         else if(msg.startsWith("TERRITORY")){
             bd.setTerritory(msg);
+        }
+        if(msg.startsWith("END")){
+            surrender.setEnabled(false);
+            accept.setEnabled(false);
+            pass.setEnabled(false);
         }
         if(!bd.isEndgame()) {
             if (msg.startsWith("SET")) {

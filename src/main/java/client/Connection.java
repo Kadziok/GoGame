@@ -31,7 +31,6 @@ public class Connection {
             in = new Scanner(socket.getInputStream());
             out = new PrintWriter(socket.getOutputStream(), true);
 
-            out.println("STH");
             while(true) {
                 if(size != 0) {
                     out.println("SIZE_" + size + "M" + botMode);
